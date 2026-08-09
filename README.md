@@ -17,7 +17,7 @@
 ---
 
 ### 2. 📷 사진으로 단어장 만들기 (AI OCR 단어 추출)
-- **🔒 비밀번호 접근보호**: 보안을 위한 패스워드 검증 시스템 적용 (`ghltordhfl`).
+- **🔑 사용자 지정 Gemini API Key**: 개별 Gemini API 키 입력 및 저장 기능으로 안전하고 자유로운 AI Vision 이용 지원 (기존 접근 비밀번호 입력 모달 제거).
 - **🤖 Gemini 3.5 AI Vision**: 가장 최신의 초고속·저토큰 모델인 `gemini-3.5-flash-lite` 기반으로 표 양식 및 손글씨 단어장도 완벽히 구분.
 - **🖱️ 드래그 앤 드롭 (Drag & Drop)**: 탐색기에서 사진을 끌어다 놓기만 해도 즉시 업로드.
 - **📚 다중 사진 일괄 추출 (Multi-file Batch)**: 여러 장의 단어장 사진(1페이지, 2페이지...)을 한 번에 올려 순차 분석 후 하나의 단어 목록으로 통합.
@@ -60,6 +60,13 @@
 
 ---
 
+## 📌 최근 업데이트 내역 (Recent Updates)
+- **🔓 비밀번호 접근 보호 제거**: 사용자 개별 Gemini API Key 입력 방식으로 일원화됨에 따라, 진입 장벽이 되었던 비밀번호(`ghltordhfl`) 모달 및 인증 로직 제거.
+- **📷 사진 단어장 화면 즉시 진입**: 메인 메뉴 및 설정 화면의 버튼을 카메라 아이콘과 함께 클릭 시 바로 OCR 추출 화면으로 진입하도록 개선.
+- **🔑 Gemini API Key 저장**: 사용자 본인의 API Key를 저장(`localStorage`)하여 독립적으로 안전하게 AI Vision 기능 이용.
+
+---
+
 ## 🛠️ 기술 스택 (Tech Stack)
 
 - **Frontend**: HTML5, Vanilla JavaScript (ES6+), CSS3
@@ -68,3 +75,4 @@
 - **AI Vision**: Google Gemini API (`gemini-3.5-flash-lite`)
 - **Audio/TTS**: Web Speech API (`SpeechSynthesisUtterance`, `en-US`)
 - **Backend / Integration**: Google Apps Script (GAS) `doPost` API
+
