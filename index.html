@@ -53,8 +53,8 @@
             <span class="relative bg-white px-3 text-xs text-slate-400 font-medium">또는</span>
         </div>
 
-        <button type="button" onclick="openOcrScreenWithAuth()" class="w-full flex items-center justify-center gap-2 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold py-3.5 rounded-xl border border-amber-200 transition-colors">
-            <i data-lucide="lock" class="w-4 h-4 text-amber-600"></i>
+        <button type="button" onclick="showScreen('ocr-screen')" class="w-full flex items-center justify-center gap-2 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold py-3.5 rounded-xl border border-amber-200 transition-colors">
+            <i data-lucide="camera" class="w-4 h-4 text-amber-600"></i>
             사진으로 단어장 만들기 / 시트 변환
         </button>
     </div>
@@ -243,32 +243,10 @@
                 <i data-lucide="pencil" class="w-6 h-6"></i>
                 <span class="text-xl">시험보기 (테스트)</span>
             </button>
-            <button onclick="openOcrScreenWithAuth()" class="w-full flex items-center justify-center gap-3 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold py-4 rounded-xl transition-colors border border-amber-200">
-                <i data-lucide="lock" class="w-5 h-5 text-amber-600"></i>
+            <button onclick="showScreen('ocr-screen')" class="w-full flex items-center justify-center gap-3 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold py-4 rounded-xl transition-colors border border-amber-200">
+                <i data-lucide="camera" class="w-5 h-5 text-amber-600"></i>
                 <span class="text-lg">사진 단어 추가 / 시트 변환</span>
             </button>
-        </div>
-    </div>
-
-    <!-- ===== 비밀번호 확인 모달 ===== -->
-    <div id="password-modal" class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl transform transition-all">
-            <div class="flex justify-center mb-3 text-amber-500">
-                <i data-lucide="lock" class="w-12 h-12"></i>
-            </div>
-            <h3 class="text-xl font-bold text-slate-800 mb-1">비밀번호 입력</h3>
-            <p class="text-slate-500 mb-4 text-xs">사진 단어장 기능 접근 비밀번호를 입력해 주세요.</p>
-            
-            <form onsubmit="verifyOcrPassword(event)" class="space-y-4">
-                <input type="password" id="pwd-input" required placeholder="비밀번호 입력" class="w-full p-3.5 text-center text-lg font-bold rounded-xl border-2 border-slate-200 outline-none focus:border-amber-500 transition-colors">
-                
-                <div id="pwd-error" class="hidden text-red-500 text-xs font-semibold">비밀번호가 올바르지 않습니다.</div>
-
-                <div class="flex gap-2">
-                    <button type="button" onclick="closePasswordModal()" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-colors text-xs">취소</button>
-                    <button type="submit" class="flex-1 py-3 rounded-xl bg-amber-500 text-white font-bold hover:bg-amber-600 transition-colors text-xs">확인</button>
-                </div>
-            </form>
         </div>
     </div>
 
@@ -447,49 +425,9 @@
             }
         }
 
-        // OCR 관련 데이터 및 비밀번호 보호
+        // OCR 관련 데이터
         let ocrExtractedWords = [];
         let selectedImageFile = null;
-        let isOcrUnlocked = false;
-
-        function openOcrScreenWithAuth() {
-            if (isOcrUnlocked || sessionStorage.getItem('ocrUnlocked') === 'true') {
-                showScreen('ocr-screen');
-                return;
-            }
-            const pwdInput = document.getElementById('pwd-input');
-            const pwdError = document.getElementById('pwd-error');
-            const pwdModal = document.getElementById('password-modal');
-            if (pwdInput) pwdInput.value = '';
-            if (pwdError) pwdError.classList.add('hidden');
-            if (pwdModal) pwdModal.classList.remove('hidden');
-            safeCreateIcons();
-            if (pwdInput) setTimeout(() => pwdInput.focus(), 100);
-        }
-
-        function verifyOcrPassword(e) {
-            if (e) e.preventDefault();
-            const pwdInput = document.getElementById('pwd-input');
-            const inputPwd = pwdInput ? pwdInput.value.trim() : '';
-            if (inputPwd === 'ghltordhfl') {
-                isOcrUnlocked = true;
-                try { sessionStorage.setItem('ocrUnlocked', 'true'); } catch (err) {}
-                const pwdModal = document.getElementById('password-modal');
-                if (pwdModal) pwdModal.classList.add('hidden');
-                showScreen('ocr-screen');
-            } else {
-                const errEl = document.getElementById('pwd-error');
-                if (errEl) {
-                    errEl.innerText = '비밀번호가 올바르지 않습니다.';
-                    errEl.classList.remove('hidden');
-                }
-            }
-        }
-
-        function closePasswordModal() {
-            const pwdModal = document.getElementById('password-modal');
-            if (pwdModal) pwdModal.classList.add('hidden');
-        }
 
         const screens = ['setup-screen', 'main-menu', 'set-screen', 'study-screen', 'test-screen', 'result-screen', 'ocr-screen'];
 
