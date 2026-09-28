@@ -73,6 +73,19 @@
         <h1 class="text-2xl font-bold mb-1 text-slate-800 text-center">사진으로 단어장 만들기</h1>
         <p class="text-slate-500 mb-5 text-xs text-center">사진을 올리면 A:단어, B:품사, C:뜻, D:세트로 자동 정리합니다.</p>
 
+        <!-- 처리 중과 결과 화면에서도 키 삭제를 사용할 수 있도록 입력 영역 밖에 배치 -->
+        <div id="gemini-key-container" class="bg-slate-50 p-3 mb-4 rounded-xl border border-slate-200 space-y-2">
+            <label for="gemini-api-key" class="block text-xs font-bold text-slate-600">Gemini API Key</label>
+            <input type="password" id="gemini-api-key" autocomplete="off" spellcheck="false" autocapitalize="none" aria-describedby="gemini-key-help gemini-key-status" oninput="updateGeminiKeyStorage()" placeholder="Google AI Studio API Key 입력" class="w-full p-2.5 rounded-lg border border-slate-200 text-xs focus:border-amber-500 outline-none">
+            <label class="flex items-center gap-2 text-xs text-slate-700">
+                <input type="checkbox" id="remember-gemini-key" autocomplete="off" onchange="updateGeminiKeyStorage()" class="accent-amber-600">
+                이 기기에서 기억
+            </label>
+            <p id="gemini-key-help" class="text-[11px] text-slate-500">기본값은 현재 페이지에서만 사용하며 새로고침하거나 페이지를 떠나면 다시 입력합니다. 기억을 선택하면 이 브라우저에 암호화 없이 저장됩니다. 공용 기기에서는 선택하지 마세요.</p>
+            <button type="button" id="delete-gemini-key" onclick="deleteGeminiKey()" class="text-xs font-bold text-rose-700 underline py-1">저장된 키 즉시 삭제</button>
+            <p id="gemini-key-status" role="status" aria-live="polite" class="text-[11px] text-slate-600"></p>
+        </div>
+
         <!-- 업로드 / 옵션 입력 영역 -->
         <div id="ocr-input-section" class="space-y-4">
             <div id="ocr-dropzone" class="border-2 border-dashed border-amber-300 rounded-2xl p-5 text-center bg-amber-50/50 hover:bg-amber-50 transition-all cursor-pointer" onclick="document.getElementById('ocr-file-input').click()">
@@ -94,12 +107,6 @@
                         <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i> Gemini AI Vision
                     </div>
                 </div>
-            </div>
-
-            <div id="gemini-key-container" class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1">
-                <label class="block text-xs font-bold text-slate-600">Gemini API Key</label>
-                <input type="password" id="gemini-api-key" placeholder="Google AI Studio API Key 입력" class="w-full p-2.5 rounded-lg border border-slate-200 text-xs focus:border-amber-500 outline-none">
-                <p class="text-[11px] text-slate-400">Gemini API Key는 최초 1회 입력 시 자동 저장됩니다.</p>
             </div>
 
             <button type="button" id="start-ocr-btn" onclick="processImageOCR()" disabled class="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 disabled:bg-slate-300 text-white font-bold py-4 rounded-xl shadow-md transition-colors text-base">
@@ -433,6 +440,106 @@
 
         let selectedImageFiles = [];
 
+        // 기본값은 입력창의 메모리만 사용. OCR 실행 자체는 키를 저장하지 않는다.
+        const GEMINI_KEY_STORAGE = 'geminiApiKey';
+        const GEMINI_KEY_CONSENT = 'geminiApiKeyRemember';
+        const GEMINI_MEMORY_NOTICE = '현재 페이지에서만 키를 사용합니다.';
+        const GEMINI_DELETE_WARNING = '브라우저 저장소에 접근할 수 없어 저장된 키 삭제를 확인하지 못했습니다. 브라우저 설정에서 이 사이트의 데이터를 삭제해 주세요.';
+
+        function setGeminiKeyStatus(message) {
+            document.getElementById('gemini-key-status').textContent = message;
+        }
+
+        function removeStoredGeminiKey() {
+            let removed = true;
+            // 동의를 먼저 제거하고, 하나가 실패해도 나머지 삭제를 시도한다.
+            for (const name of [GEMINI_KEY_CONSENT, GEMINI_KEY_STORAGE]) {
+                try { localStorage.removeItem(name); }
+                catch { removed = false; }
+            }
+            return removed;
+        }
+
+        function initializeGeminiKey() {
+            const input = document.getElementById('gemini-api-key');
+            const remember = document.getElementById('remember-gemini-key');
+            input.value = '';
+            remember.checked = false;
+            try {
+                const savedKey = localStorage.getItem(GEMINI_KEY_STORAGE);
+                const consent = localStorage.getItem(GEMINI_KEY_CONSENT) === 'true';
+                if (savedKey && consent) {
+                    input.value = savedKey;
+                    remember.checked = true;
+                    setGeminiKeyStatus('이 브라우저에 저장된 키를 불러왔습니다.');
+                    return;
+                }
+                // 기존 자동 저장 키는 동의로 간주하지 않고 현재 페이지에서만 사용한다.
+                if (savedKey) input.value = savedKey;
+                const removed = removeStoredGeminiKey();
+                setGeminiKeyStatus(!removed ? GEMINI_DELETE_WARNING : savedKey
+                    ? '기존 자동 저장 키를 브라우저 저장소에서 삭제했습니다. 현재 페이지에서만 사용하며, 계속 저장하려면 기억을 선택하세요.'
+                    : GEMINI_MEMORY_NOTICE);
+            } catch {
+                const removed = removeStoredGeminiKey();
+                setGeminiKeyStatus(removed
+                    ? '저장된 키를 불러오지 못했습니다. 키를 입력하면 현재 페이지에서 OCR을 사용할 수 있습니다.'
+                    : GEMINI_DELETE_WARNING);
+            }
+        }
+
+        function updateGeminiKeyStorage() {
+            const apiKey = document.getElementById('gemini-api-key').value.trim();
+            const remember = document.getElementById('remember-gemini-key');
+            if (!remember.checked || !apiKey) {
+                const removed = removeStoredGeminiKey();
+                setGeminiKeyStatus(!removed ? GEMINI_DELETE_WARNING : remember.checked
+                    ? '키를 입력하면 이 브라우저에 저장합니다.' : GEMINI_MEMORY_NOTICE);
+                return;
+            }
+            try {
+                localStorage.setItem(GEMINI_KEY_STORAGE, apiKey);
+                localStorage.setItem(GEMINI_KEY_CONSENT, 'true');
+                setGeminiKeyStatus('이 브라우저에 키를 저장했습니다. 기억 선택을 해제하면 저장된 키가 삭제됩니다.');
+            } catch {
+                remember.checked = false;
+                const removed = removeStoredGeminiKey();
+                setGeminiKeyStatus(removed
+                    ? '키를 저장하지 못했습니다. 현재 페이지에서만 사용합니다.'
+                    : '키 저장에 실패했습니다. ' + GEMINI_DELETE_WARNING);
+            }
+        }
+
+        function deleteGeminiKey() {
+            document.getElementById('gemini-api-key').value = '';
+            document.getElementById('remember-gemini-key').checked = false;
+            const removed = removeStoredGeminiKey();
+            setGeminiKeyStatus(removed
+                ? '저장된 키와 입력창의 키를 삭제했습니다. 이미 시작한 OCR은 계속 진행되며 키를 다시 저장하지 않습니다.'
+                : '입력창의 키를 지웠습니다. ' + GEMINI_DELETE_WARNING);
+        }
+
+        // 다른 탭에서 동의를 철회하거나 키를 삭제하면 이 탭도 비영구 상태로 전환한다.
+        window.addEventListener('storage', (event) => {
+            if (event.key !== null && event.key !== GEMINI_KEY_STORAGE && event.key !== GEMINI_KEY_CONSENT) return;
+            try {
+                if (event.storageArea !== localStorage) return;
+                if (localStorage.getItem(GEMINI_KEY_STORAGE) && localStorage.getItem(GEMINI_KEY_CONSENT) === 'true') return;
+            } catch { /* 접근 실패 시에도 이 탭에서 저장 동의를 해제한다. */ }
+            document.getElementById('gemini-api-key').value = '';
+            document.getElementById('remember-gemini-key').checked = false;
+            setGeminiKeyStatus('다른 탭에서 키 보관 설정이 변경되었습니다. 키를 다시 입력해 주세요.');
+        });
+
+        // 뒤로 가기 캐시에서도 비영구 키가 입력창에 남지 않도록 한다.
+        window.addEventListener('pagehide', () => {
+            document.getElementById('gemini-api-key').value = '';
+            document.getElementById('remember-gemini-key').checked = false;
+        });
+        window.addEventListener('pageshow', (event) => {
+            if (event.persisted) initializeGeminiKey();
+        });
+
         function setupDragAndDrop() {
             const dropzone = document.getElementById('ocr-dropzone');
             if (!dropzone) return;
@@ -531,8 +638,6 @@
                 document.getElementById('gemini-api-key').focus();
                 return;
             }
-
-            localStorage.setItem('geminiApiKey', apiKey);
 
             document.getElementById('ocr-input-section').classList.add('hidden');
             document.getElementById('ocr-result-section').classList.add('hidden');
@@ -852,15 +957,11 @@ Respond ONLY with a valid JSON array without markdown syntax or backticks.`;
 
         // 페이지 로드 처리
         window.onload = () => {
-            const savedUrl = localStorage.getItem('vocabSheetUrl');
-            if (savedUrl) {
-                document.getElementById('sheet-url').value = savedUrl;
-            }
-
-            const savedApiKey = localStorage.getItem('geminiApiKey');
-            if (savedApiKey) {
-                document.getElementById('gemini-api-key').value = savedApiKey;
-            }
+            initializeGeminiKey();
+            try {
+                const savedUrl = localStorage.getItem('vocabSheetUrl');
+                if (savedUrl) document.getElementById('sheet-url').value = savedUrl;
+            } catch { /* 저장소가 차단되어도 키 입력과 OCR 초기화는 계속한다. */ }
 
             setupDragAndDrop();
             safeCreateIcons();
